@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Item</title>
+    <style>
+
+        .container {
+            background-color: #ffffff; /* สีพื้นหลังของ container */
+            border-radius: 20px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+            max-width: 800px; /* กำหนดความกว้างสูงสุดของ container */
+            margin: 0 auto; /* จัดให้อยู่กลางหน้า */
+            padding: 30px;
+        }
+
+        th, h1, tr {
+            text-align: center; /* จัดให้อยู่กลางในเซลล์ตาราง */
+        }
+    </style>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    
+</head>
+<body>
+    <h1>Item</h1>
+    <div class="container">
+
+<!-- Addbtn from bootstrap (green color) -->
+<div class="btn1 mb-3">
+    <input type="text" id="name-input" class="form-control" placeholder="Enter item name">
+    <button onclick="addItem()" class="btn btn-success mt-3">Add</button> 
+</div>
+<!-- //-------------------------------------------------------------------------------------------------------------------------------------------------         -->
+
+<!-- Fetchbtn from bootstrap (cyan color)-->
+<div class="btn2 mb-3">
+    <input type="number" id="itemId" min="1" class="form-control" placeholder="Enter item Id" />
+    <button onclick="fetchItem()" class="btn btn-info mt-3">Show</button>
+</div>
+
+<!-- //------------------------------------------------------------------------------------------------------------------------------------------------- -->
+
+<!-- แสดงชื่อ -->     
+<div id="item-name-display">
+    <p id="itemName"></p>
+</div>
+
+<!-- //------------------------------------------------------------------------------------------------------------------------------------------------- -->
+
+<!-- Deletebtn from bootstrap (red color)-->       
+<div class="btn3 mb-3">
+    <input type="number" id="itemIdToDelete" min="1" class="form-control" placeholder="Enter item Id " />
+    <button onclick="deleteItem()" class="btn btn-danger mt-3">Delete</button>
+</div>
+
+<!-- //------------------------------------------------------------------------------------------------------------------------------------------------- -->
+
+<!-- Updatebtn from bootstrap (yellow color)-->
+<div class="btn4 mb-3">
+    <input type="number" id="updateItemId" min="1" maxlength="50" class="form-control custom-width" placeholder="Item ID" />
+    <input type="text" id="updateName" class="form-control custom-width" placeholder="Item Name" />
+</div>
+<button onclick="updateItem()" class="btn btn-warning mt-3">Update User</button>
+
+<!-- //------------------------------------------------------------------------------------------------------------------------------------------------- -->
+
+        <table class="table table-hover"> 
+            <thead>
+                <tr>
+                    <th>Id</th>
+                    <th>Name</th>
+                </tr>
+            </thead>
+            <tbody id="TableItem"></tbody>
+        </table>
+    </div>
+    <script src="itemData.js"></script> 
+</body>
+</html>

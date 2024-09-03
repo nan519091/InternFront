@@ -127,7 +127,7 @@ function deleteItem() {
         }
     })
     .catch(error => {
-        console.error('Error deleting user:', error);
+        console.error('Error deleting item:', error);
         alert(error.message);
     });
 }

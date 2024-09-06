@@ -1,29 +1,55 @@
-function loadUsers() {
-    fetch('http://localhost:5263/api/User')
+function RequestApi(url, params = {}, method = 'GET', body = null) {
+    const token = localStorage.getItem('token');
+    const options = {
+        method: method,
+        headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+        }
+    };
+    
+    if (body) {
+        options.body = JSON.stringify(body); // ส่งข้อมูล body ถ้ามี
+    }
+
+    return fetch(url, options)
         .then(response => {
-            if (!response.ok) {
-                throw new Error('Network response was not ok');
+            if (response.ok) {
+                return response.json();
+            } else {
+                throw new Error('Error fetching data');
             }
-            return response.json();
         })
+        .catch(error => {
+            console.error(error);
+            return 'Data not found.';
+        });
+}
+
+
+function handleApiError(element) {
+    const message = 'Data not found.';
+    element.textContent = message;
+    console.error(message);
+}
+//-------------------------------------------------------------------------------------------------------------------------------------------------
+function loadUsers() {
+    // ใช้ RequestApi เพื่อดึงข้อมูลผู้ใช้
+    RequestApi('http://localhost:5263/api/User')
         .then(data => {
             const userInfo = document.querySelector("#TableUser");
             userInfo.innerHTML = ''; // Clear content in table
-
+            // สร้างแถวใหม่ในตารางโดยใช้ข้อมูลที่ได้จาก API
             const rows = data.map(({ id, name }) => `
                 <tr>
                     <td>${id}</td>
                     <td>${name}</td>
                 </tr>
             `).join('');
-
-            userInfo.innerHTML = rows; // Add new rows to a table based on data retrieved from the API
+            userInfo.innerHTML = rows; // เพิ่มแถวใหม่ในตาราง
         })
-        .catch(error => {
-            console.error("Error fetching data:", error);
-        });
+        .catch(() => handleApiError(userNameElement));
 }
-
 //-------------------------------------------------------------------------------------------------------------------------------------------------
 
 function fetchUser() {
@@ -34,23 +60,13 @@ function fetchUser() {
         userNameElement.textContent = 'Please enter a user ID.';
         return;
     }
-    fetch(`http://localhost:5263/api/User/${userId}`)
-        .then(response => {
-            if (response.ok) {
-                return response.json();
-            } else {
-                throw new Error('Error fetching data');
-            }
-        })
+    RequestApi(`http://localhost:5263/api/User/${userId}`)
         .then(user => {
-            userNameElement.textContent = `Name: ${user.name}`;
+            userNameElement.textContent = `Name: ${user.name}`; // แสดงชื่อผู้ใช้
         })
-        .catch(error => {
-            userNameElement.textContent = 'User not found.';
-            console.error(error);
-        });
-}
+        .catch(() => handleApiError(userNameElement));
 
+}
 //-------------------------------------------------------------------------------------------------------------------------------------------------
 function addUser() {
     const nameInput = document.getElementById('name-input').value;
@@ -58,81 +74,47 @@ function addUser() {
         alert('Please enter a name.');
         return;
     }
-    fetch('http://localhost:5263/api/User', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ name: nameInput }) // Convert JSON to string
-    })
-    .then(response => {
-        if (response.ok) {
-            return response.json();
-        } else {
-            alert('Error adding user.');
-            throw new Error('Failed to add user.');
-        }
-    })
-    .then(data => {
-        loadUsers(); // Load the updated list of users
-        document.getElementById('name-input').value = ''; // Clear the input field
-    })
-    .catch(error => {
-        console.error('Error adding user:', error);
-    });
+    // ใช้ RequestApi เพื่อเรียก POST request
+    RequestApi('http://localhost:5263/api/User', {}, 'POST', { name: nameInput })
+        .then(data => {
+            loadUsers(); // โหลดข้อมูลผู้ใช้ที่อัปเดต
+            document.getElementById('name-input').value = ''; // ล้างช่อง input
+        })
+        .catch(() => handleApiError(userNameElement));
 }
-
 //-------------------------------------------------------------------------------------------------------------------------------------------------
-
 function updateUser() {
     const userId = document.getElementById('updateUserId').value;
     const newName = document.getElementById('updateName').value;
 
-    if (!userId || !newName) return alert('Please enter both user ID and new name.');
-    fetch(`http://localhost:5263/api/User/${userId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: userId, name: newName })
-    })
-    .then(response => response.ok ? response.json() : response.text().then(text => { throw new Error(text); })) //if it's true covert to Json and go .then ,if it's false convert to text and go .catch
-    .then(() => {
-        loadUsers();
-        document.getElementById('updateUserId').value = '';
-        document.getElementById('updateName').value = '';
-        alert('User updated successfully.');
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        alert(error.message);
-    });
+    if (!userId || !newName) {
+        alert('Please enter both user ID and new name.');
+        return;
+    }
+    RequestApi(`http://localhost:5263/api/User/${userId}`, {}, 'PUT', { id: userId, name: newName })
+        .then(() => {
+            loadUsers(); // โหลดข้อมูลผู้ใช้ที่อัปเดต
+            document.getElementById('updateUserId').value = ''; // ล้างช่อง input
+            document.getElementById('updateName').value = '';
+            alert('User updated successfully.');
+        })
+        .catch(() => handleApiError(userNameElement));
 }
-
 //-------------------------------------------------------------------------------------------------------------------------------------------------
 function deleteUser() {
     const userId = document.getElementById('userIdToDelete').value;
 
     if (!userId || !confirm('Are you sure you want to delete this user?')) return;
-    fetch(`http://localhost:5263/api/User/${userId}`, {
-        method: 'DELETE'
-    })
-    .then(response => {
-        if (response.ok) {
-            loadUsers();
+    // ใช้ RequestApi เพื่อทำ DELETE request
+    RequestApi(`http://localhost:5263/api/User/${userId}`, {}, 'DELETE')
+        .then(() => {
+            loadUsers(); // โหลดข้อมูลผู้ใช้ใหม่หลังจากลบ
             alert('Data has been deleted successfully.');
-        } else {
-            return response.text().then(text => {
-                throw new Error(`Error: ${text}`);
-            });
-        }
-    })
-    .catch(error => {
-        console.error('Error deleting user:', error);
-        alert(error.message);
-    });
+        })
+        .catch(() => handleApiError(userNameElement));
 }
-
 //-------------------------------------------------------------------------------------------------------------------------------------------------
 loadUsers();
 
-//-------------------------------------------------------------------------------------------------------------------------------------------------
+
 

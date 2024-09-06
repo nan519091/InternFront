@@ -1,15 +1,46 @@
-function loadItems() {
-    fetch('http://localhost:5263/api/Item')
+function RequestApi(url, params = {}, method = 'GET', body = null) {
+    const token = localStorage.getItem('token');
+    const options = {
+        method: method,
+        headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+        }
+    };
+    
+    if (body) {
+        options.body = JSON.stringify(body); // ส่งข้อมูล body ถ้ามี
+    }
+
+    return fetch(url, options)
         .then(response => {
-            if (!response.ok) {
-                throw new Error('Network response was not ok');
+            if (response.ok) {
+                return response.json();
+            } else {
+                throw new Error('Error fetching data');
             }
-            return response.json();
         })
+        .catch(error => {
+            console.error(error);
+            return 'Data not found.';
+        });
+}
+
+
+function handleApiError(element) {
+    const message = 'Data not found.';
+    element.textContent = message;
+    console.error(message);
+}
+//-------------------------------------------------------------------------------------------------------------------------------------------------
+function loadItems() {
+    // ใช้ RequestApi เพื่อดึงข้อมูล Items
+    RequestApi('http://localhost:5263/api/Item')
         .then(data => {
             const itemInfo = document.querySelector("#TableItem");
             itemInfo.innerHTML = ''; // Clear content in table
 
+            // สร้างแถวใหม่ในตารางโดยใช้ข้อมูลที่ได้จาก API
             const rows = data.map(({ id, name }) => `
                 <tr>
                     <td>${id}</td>
@@ -17,13 +48,10 @@ function loadItems() {
                 </tr>
             `).join('');
 
-            itemInfo.innerHTML = rows; // Add new rows to a table based on data retrieved from the API
+            itemInfo.innerHTML = rows; // เพิ่มแถวใหม่ในตาราง
         })
-        .catch(error => {
-            console.error("Error fetching data:", error);
-        });
+        .catch(() => handleApiError(itemInfo));
 }
-
 //-------------------------------------------------------------------------------------------------------------------------------------------------
 
 function fetchItem() {
@@ -31,27 +59,15 @@ function fetchItem() {
     const itemNameElement = document.getElementById('itemName');
 
     if (!itemId) {
-        itemNameElement.textContent = 'Please enter a item ID.';
+        itemNameElement.textContent = 'Please enter an item ID.';
         return;
     }
-
-    fetch(`http://localhost:5263/api/Item/${itemId}`)
-        .then(response => {
-            if (response.ok) {
-                return response.json();
-            } else {
-                throw new Error('Error fetching data.');
-            }
-        })
+    RequestApi(`http://localhost:5263/api/Item/${itemId}`)
         .then(item => {
             itemNameElement.textContent = `Name: ${item.name}`;
         })
-        .catch(error => {
-            itemNameElement.textContent = 'Item not found.';
-            console.error(error);
-        });
+        .catch(() => handleApiError(itemNameElement));
 }
-
 //-------------------------------------------------------------------------------------------------------------------------------------------------
 function addItem() {
     const nameInput = document.getElementById('name-input').value;
@@ -59,79 +75,46 @@ function addItem() {
         alert('Please enter a name.');
         return;
     }
-
-    fetch('http://localhost:5263/api/Item', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ name: nameInput }) // Convert JSON to string
-    })
-    .then(response => {
-        if (response.ok) {
-            return response.json();
-        } else {
-            alert('Error adding item.');
-            throw new Error('Failed to add item.');
-        }
-    })
-    .then(data => {
-        loadItems(); // Load the updated list of users
-        document.getElementById('name-input').value = ''; // Clear the input field
-    })
-    .catch(error => {
-        console.error('Error adding item:', error);
-    });
+    // ใช้ RequestApi เพื่อเรียก POST request
+    RequestApi('http://localhost:5263/api/Item', {}, 'POST', { name: nameInput })
+        .then(data => {
+            loadItems(); // โหลดข้อมูลที่อัปเดต
+            document.getElementById('name-input').value = ''; // ล้างช่อง input
+        })
+        .catch(() => handleApiError());
 }
 //-------------------------------------------------------------------------------------------------------------------------------------------------
-
 function updateItem() {
     const itemId = document.getElementById('updateItemId').value;
     const newName = document.getElementById('updateName').value;
 
-    if (!itemId || !newName) return alert('Please enter both user ID and new name.');
-    fetch(`http://localhost:5263/api/Item/${itemId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: itemId, name: newName })
-    })
-    .then(response => response.ok ? response.json() : response.text().then(text => { throw new Error(text); })) //if it's true covert to Json and go .then ,if it's false convert to text and go .catch
-    .then(() => {
-        loadItems();
-        document.getElementById('updateItemId').value = '';
-        document.getElementById('updateName').value = '';
-        alert('Item updated successfully.');
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        alert(error.message);
-    });
+    if (!itemId || !newName) {
+        alert('Please enter both item ID and new name.');
+        return;
+    }
+    RequestApi(`http://localhost:5263/api/Item/${itemId}`, {}, 'PUT', { id: itemId, name: newName })
+        .then(() => {
+            loadItems(); // โหลดข้อมูลที่อัปเดต
+            document.getElementById('updateItemId').value = ''; // ล้างช่อง input
+            document.getElementById('updateName').value = '';
+            alert('Item updated successfully.');
+        })
+        .catch(() => handleApiError());
 }
-
 //-------------------------------------------------------------------------------------------------------------------------------------------------
 function deleteItem() {
     const itemId = document.getElementById('itemIdToDelete').value;
 
     if (!itemId || !confirm('Are you sure you want to delete this item?')) return;
-    fetch(`http://localhost:5263/api/Item/${itemId}`, {
-        method: 'DELETE'
-    })
-    .then(response => {
-        if (response.ok) {
-            loadItems();
-            alert('Data has been deleted successfully.');
-        } else {
-            return response.text().then(text => {
-                throw new Error(`Error: ${text}`);
-            });
-        }
-    })
-    .catch(error => {
-        console.error('Error deleting item:', error);
-        alert(error.message);
-    });
+
+    // ใช้ RequestApi เพื่อทำ DELETE request
+    RequestApi(`http://localhost:5263/api/Item/${itemId}`, {}, 'DELETE')
+        .then(() => {
+            loadItems(); // โหลดข้อมูลใหม่หลังจากลบ
+            alert('Item has been deleted successfully.');
+        })
+        .catch(() => handleApiError());
 }
 
 //-------------------------------------------------------------------------------------------------------------------------------------------------
-
 loadItems();
